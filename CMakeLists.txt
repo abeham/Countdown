@@ -9,12 +9,14 @@ option(LIBRARY_ONLY "Library only build (if the library is included in another r
 # Add the main library
 add_subdirectory(src/Countdown)
 
-# Add tests if enabled
-if(BUILD_TESTS AND NOT LIBRARY_ONLY)
-    add_subdirectory(src/Tests)
-endif()
-
 # Add examples if enabled
 if(BUILD_EXAMPLES AND NOT LIBRARY_ONLY)
     add_subdirectory(src/Example)
+endif()
+
+# Add tests if enabled
+if(BUILD_TESTS AND NOT LIBRARY_ONLY)
+    # Enable testing
+    enable_testing()
+    add_subdirectory(src/Tests)
 endif()
