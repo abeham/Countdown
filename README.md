@@ -25,12 +25,12 @@ int main() {
 
 You can either copy the `Countdown.hpp` file into your project or integrate the project, e.g. via [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake):
     
-    ```cmake
-    include(cmake/CPM.cmake)
+```cmake
+include(cmake/CPM.cmake)
 
-    CPMAddPackage(
-        NAME Countdown
-        GITHUB_REPOSITORY abeham/Countdown
-        VERSION 1.0
-    )
-    ```
+CPMAddPackage(
+    NAME Countdown
+    GITHUB_REPOSITORY abeham/Countdown
+    VERSION 1.0
+)
+```
