@@ -26,57 +26,54 @@
 #include <mutex>
 #include <chrono>
 #include <thread>
+#include <functional>
 
-template<typename Callback, class Rep, class Period = std::ratio<1>>
-class Countdown
+class [[nodiscard]] Countdown
 {
     std::mutex _mutex;
     std::condition_variable _cv;
-    std::thread _timer_thread;
+    std::jthread _timer_thread;
     
-    std::chrono::duration<Rep, Period> _duration;
-    Callback _callback;
-    bool _abort_requested, _callback_called;
+    std::function<void()> _callback;
+    bool _abort_requested;
 
-    void timeout()
+    template<class Rep, class Period = std::ratio<1>>
+    void timeout(std::chrono::duration<Rep, Period> duration)
     {
+        auto then = std::chrono::high_resolution_clock::now() + duration; // compute timepoint when the countdown should end
         std::unique_lock lk(_mutex);
-        _cv.wait_for(lk, _duration);
+        _cv.wait_for(lk, duration, [&then]()
+            {
+                return then <= std::chrono::high_resolution_clock::now();
+            }
+        );
         if (!_abort_requested) _callback();
-        _callback_called = true;
     }
 
 public:
-    Countdown(std::chrono::duration<Rep, Period> duration, Callback&& callback)
-        : _duration(duration), _callback(callback), _abort_requested(false), _callback_called(false)
+    template<class Rep, class Period = std::ratio<1>>
+    Countdown(std::chrono::duration<Rep, Period> duration, std::function<void()>&& callback)
+        : _callback(std::forward<std::function<void()>>(callback)), _abort_requested(false)
     {
-        _timer_thread = std::thread{&Countdown::timeout, this};
+        _timer_thread = std::jthread{std::bind_front(&Countdown::timeout<Rep, Period>, this, duration)};
     }
     ~Countdown()
     {
-        if (!_callback_called && !_abort_requested)
-        {
-            std::lock_guard lk(_mutex);
-            if (!_callback_called && !_abort_requested)
-            {
-                _abort_requested = true;
-                _cv.notify_one();
-            }
-        }
-        if (_timer_thread.joinable()) _timer_thread.join();
+        Abort();
     }
 
     void Abort()
     {
-        if (!_abort_requested && !_callback_called)
+        bool notify = false;
         {
             std::lock_guard lk(_mutex);
-            if (!_abort_requested && !_callback_called)
+            if (!_abort_requested)
             {
                 _abort_requested = true;
-                _cv.notify_one();
+                notify = true;
             }
         }
+        if (notify) _cv.notify_one();
     }
 };
 

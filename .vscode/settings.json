@@ -68,6 +68,7 @@
         "fstream": "cpp",
         "queue": "cpp",
         "ranges": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "functional": "cpp"
     }
 }
