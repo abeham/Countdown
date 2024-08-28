@@ -40,13 +40,8 @@ class [[nodiscard]] Countdown
     template<class Rep, class Period = std::ratio<1>>
     void timeout(std::chrono::duration<Rep, Period> duration)
     {
-        auto then = std::chrono::high_resolution_clock::now() + duration; // compute timepoint when the countdown should end
         std::unique_lock lk(_mutex);
-        _cv.wait_for(lk, duration, [&then]()
-            {
-                return then <= std::chrono::high_resolution_clock::now();
-            }
-        );
+        _cv.wait_for(lk, duration, [&abort_requested = _abort_requested]() { return abort_requested; }); // wakeup after duration isn't dependent on the predicate
         if (!_abort_requested) _callback();
     }
 
@@ -57,9 +52,13 @@ public:
     {
         _timer_thread = std::jthread{std::bind_front(&Countdown::timeout<Rep, Period>, this, duration)};
     }
+    Countdown(const Countdown&) = delete;
+    Countdown& operator=(const Countdown&) = delete;
     ~Countdown()
     {
         Abort();
+        // join the thread to ensure that the other members are not destroyed before the thread has finished
+        if (_timer_thread.joinable()) _timer_thread.join();
     }
 
     void Abort()

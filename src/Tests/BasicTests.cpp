@@ -20,6 +20,15 @@ TEST_CASE( "Basic usage of Countdown", "[Countdown]" )
         std::this_thread::sleep_for(std::chrono::milliseconds(timeoutms * 2));
         REQUIRE(!called);
     }
+    SECTION("Just quit without waiting")
+    {
+        REQUIRE(!called);
+    }
+    SECTION("Just Abort without waiting")
+    {
+        cd.Abort();
+        REQUIRE(!called);
+    }
 }
 
 TEST_CASE( "Countdown with different durations", "[Countdown]" )
